@@ -5,6 +5,7 @@ import { useAuth } from "../context/AuthContext";
 import { listenParties, addParty } from "../services/parties";
 import { addTransaction } from "../services/transactions";
 import TopBar from "../components/TopBar";
+import { CameraIcon } from "../components/Icons";
 
 function preprocess(file) {
   return new Promise((resolve) => {
@@ -117,7 +118,7 @@ export default function ScanAdd() {
         <div className="scan-area">
           {!previewUrl && (
             <button className="btn btn-primary btn-block" onClick={() => fileInputRef.current?.click()}>
-              📷 Capture Slip / Bill
+              <CameraIcon width={18} height={18} /> Capture Slip / Bill
             </button>
           )}
           <input

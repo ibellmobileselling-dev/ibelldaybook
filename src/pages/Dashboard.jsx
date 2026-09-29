@@ -5,6 +5,7 @@ import { listenParties, addParty } from "../services/parties";
 import { listenAllTransactions } from "../services/transactions";
 import BottomNav from "../components/BottomNav";
 import TopBar from "../components/TopBar";
+import { LogoutIcon } from "../components/Icons";
 
 function initials(name) {
   return name.trim().split(/\s+/).slice(0, 2).map((w) => w[0]?.toUpperCase()).join("");
@@ -74,7 +75,7 @@ export default function Dashboard() {
         title="IBELL MOBILE"
         right={
           <button className="icon-btn" onClick={logout} title="Logout">
-            ⏻
+            <LogoutIcon />
           </button>
         }
       />
