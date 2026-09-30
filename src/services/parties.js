@@ -11,7 +11,7 @@ import {
 } from "firebase/firestore";
 import { db } from "../firebase/config";
 
-const partiesCol = collection(db, "parties");
+export const partiesCol = collection(db, "parties");
 
 export function listenParties(userId, callback) {
   const q = query(partiesCol, where("userId", "==", userId));
@@ -21,14 +21,18 @@ export function listenParties(userId, callback) {
   });
 }
 
-export function addParty(userId, { name, phone, openingBalance }) {
-  return addDoc(partiesCol, {
+export function partyData(userId, { name, phone, openingBalance }) {
+  return {
     userId,
     name: name.trim(),
     phone: phone || "",
     openingBalance: Number(openingBalance) || 0,
     createdAt: serverTimestamp(),
-  });
+  };
+}
+
+export function addParty(userId, party) {
+  return addDoc(partiesCol, partyData(userId, party));
 }
 
 export function updateParty(partyId, data) {

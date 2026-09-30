@@ -30,6 +30,7 @@ export default function Signup() {
   return (
     <div className="auth-screen">
       <div className="auth-header">
+        <div className="brand-mark">IB</div>
         <h1>Create Account</h1>
         <p>Set up your shop's daybook</p>
       </div>

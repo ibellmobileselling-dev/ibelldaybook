@@ -1,19 +1,17 @@
 import { useEffect, useMemo, useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import { listenParties, addParty } from "../services/parties";
 import { listenAllTransactions } from "../services/transactions";
 import BottomNav from "../components/BottomNav";
 import TopBar from "../components/TopBar";
-import { LogoutIcon } from "../components/Icons";
-
-function initials(name) {
-  return name.trim().split(/\s+/).slice(0, 2).map((w) => w[0]?.toUpperCase()).join("");
-}
+import Sheet from "../components/Sheet";
+import Avatar from "../components/Avatar";
+import { LogoutIcon, PlusIcon, SearchIcon } from "../components/Icons";
+import { signedAmount, reportWriteError, formatDay, rupees } from "../utils/ledger";
 
 export default function Dashboard() {
   const { user, logout } = useAuth();
-  const navigate = useNavigate();
   const [parties, setParties] = useState([]);
   const [txns, setTxns] = useState([]);
   const [search, setSearch] = useState("");
@@ -36,7 +34,7 @@ export default function Dashboard() {
       let bal = Number(p.openingBalance) || 0;
       for (const t of txns) {
         if (t.partyId !== p.id) continue;
-        bal += t.type === "in" ? t.amount : -t.amount;
+        bal += signedAmount(t);
       }
       const lastTxn = txns
         .filter((t) => t.partyId === p.id)
@@ -61,48 +59,97 @@ export default function Dashboard() {
     .filter((p) => p.name.toLowerCase().includes(search.toLowerCase()))
     .sort((a, b) => a.name.localeCompare(b.name));
 
-  async function handleAddParty(e) {
+  function handleAddParty(e) {
     e.preventDefault();
     if (!newParty.name.trim()) return;
-    await addParty(user.uid, newParty);
+    addParty(user.uid, newParty).catch(reportWriteError);
     setNewParty({ name: "", phone: "", openingBalance: "0" });
     setShowAdd(false);
   }
 
+  const net = totals.get - totals.give;
+  const closeAdd = () => setShowAdd(false);
+
   return (
     <>
       <TopBar
+        subtitle="Daybook"
         title="IBELL MOBILE"
         right={
-          <button className="icon-btn" onClick={logout} title="Logout">
-            <LogoutIcon />
+          <button className="icon-btn" onClick={logout} title="Logout" aria-label="Logout">
+            <LogoutIcon width={20} height={20} />
           </button>
         }
       />
       <div className="page">
-        <div className="summary-row">
-          <div className="summary-card give">
-            <div className="label">You'll Give</div>
-            <div className="value">₹{totals.give.toLocaleString("en-IN")}</div>
+        <section className="hero">
+          <div className="hero-label">Net balance</div>
+          <div className={`hero-value ${net < 0 ? "give" : ""}`}>
+            {net < 0 ? "−" : ""}
+            {rupees(net)}
           </div>
-          <div className="summary-card get">
-            <div className="label">You'll Get</div>
-            <div className="value">₹{totals.get.toLocaleString("en-IN")}</div>
+          <div className="hero-sub">
+            {net < 0 ? "You'll give overall" : "You'll get overall"} · {parties.length}{" "}
+            {parties.length === 1 ? "party" : "parties"}
           </div>
+          <div className="hero-tiles">
+            <div className="hero-tile get">
+              <span>You'll get</span>
+              <strong>{rupees(totals.get)}</strong>
+            </div>
+            <div className="hero-tile give">
+              <span>You'll give</span>
+              <strong>{rupees(totals.give)}</strong>
+            </div>
+          </div>
+        </section>
+
+        <div className="section-head">
+          <h2>Parties</h2>
+          <span className="count-pill">{filtered.length}</span>
         </div>
 
-        <div className="search-box">
-          <input
-            placeholder="Search party..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-          />
-        </div>
+        <label className="search-box">
+          <SearchIcon width={18} height={18} />
+          <input placeholder="Search party" value={search} onChange={(e) => setSearch(e.target.value)} />
+        </label>
 
-        {showAdd && (
-          <form className="form" onSubmit={handleAddParty} style={{ paddingTop: 0 }}>
+        <div className="party-list">
+          {filtered.length === 0 && (
+            <div className="empty-state">
+              {parties.length === 0 ? "No parties yet. Tap “Add party” to add your first one." : "No party matches your search."}
+            </div>
+          )}
+          {filtered.map((p) => {
+            const info = balances[p.id] || { balance: 0 };
+            const isGive = info.balance < 0;
+            const settled = Math.abs(info.balance) < 0.005;
+            return (
+              <Link key={p.id} to={`/party/${p.id}`} className="party-card">
+                <Avatar name={p.name} />
+                <div className="party-info">
+                  <div className="party-name">{p.name}</div>
+                  <div className="party-date">{info.lastDate ? formatDay(info.lastDate) : "No entries yet"}</div>
+                </div>
+                <div className={`party-balance ${settled ? "zero" : isGive ? "give" : "get"}`}>
+                  {rupees(info.balance)}
+                  <span className="bal-label">{settled ? "Settled" : isGive ? "You'll give" : "You'll get"}</span>
+                </div>
+              </Link>
+            );
+          })}
+        </div>
+      </div>
+
+      <button className="fab" onClick={() => setShowAdd(true)}>
+        <PlusIcon width={20} height={20} /> Add party
+      </button>
+
+      {showAdd && (
+        <Sheet title="New party" onClose={closeAdd}>
+          <form className="form" onSubmit={handleAddParty}>
             <div className="field">
-              <label>Party Name</label>
+              <label>Party name</label>
               <input
                 autoFocus
                 required
@@ -113,58 +160,32 @@ export default function Dashboard() {
             <div className="field">
               <label>Phone (optional)</label>
               <input
+                type="tel"
                 value={newParty.phone}
                 onChange={(e) => setNewParty((f) => ({ ...f, phone: e.target.value }))}
               />
             </div>
             <div className="field">
-              <label>Opening Balance</label>
+              <label>Opening balance</label>
               <input
                 type="number"
+                inputMode="decimal"
                 value={newParty.openingBalance}
                 onChange={(e) => setNewParty((f) => ({ ...f, openingBalance: e.target.value }))}
               />
+              <div className="field-hint">Positive if they owe you, negative if you owe them.</div>
             </div>
-            <div style={{ display: "flex", gap: 10 }}>
-              <button type="button" className="btn btn-outline" style={{ flex: 1 }} onClick={() => setShowAdd(false)}>
+            <div className="btn-row">
+              <button type="button" className="btn btn-outline" onClick={closeAdd}>
                 Cancel
               </button>
-              <button type="submit" className="btn btn-primary" style={{ flex: 1 }}>
-                Add Party
+              <button type="submit" className="btn btn-primary">
+                Add party
               </button>
             </div>
           </form>
-        )}
-
-        <div className="party-list">
-          {filtered.length === 0 && !showAdd && (
-            <div className="empty-state">No parties yet. Tap + to add your first party.</div>
-          )}
-          {filtered.map((p) => {
-            const info = balances[p.id] || { balance: 0 };
-            const isGive = info.balance < 0;
-            return (
-              <Link key={p.id} to={`/party/${p.id}`} className="party-card">
-                <div style={{ display: "flex", alignItems: "center", flex: 1 }}>
-                  <div className="party-avatar">{initials(p.name)}</div>
-                  <div className="party-info">
-                    <div className="party-name">{p.name}</div>
-                    {info.lastDate && <div className="party-date">Last: {info.lastDate}</div>}
-                  </div>
-                </div>
-                <div className={`party-balance ${isGive ? "give" : "get"}`}>
-                  ₹{Math.abs(info.balance).toLocaleString("en-IN")}
-                  <span className="bal-label">{isGive ? "You'll Give" : "You'll Get"}</span>
-                </div>
-              </Link>
-            );
-          })}
-        </div>
-      </div>
-
-      <button className="fab" onClick={() => setShowAdd((s) => !s)}>
-        +
-      </button>
+        </Sheet>
+      )}
       <BottomNav />
     </>
   );

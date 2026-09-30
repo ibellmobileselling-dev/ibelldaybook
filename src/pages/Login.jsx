@@ -27,6 +27,7 @@ export default function Login() {
   return (
     <div className="auth-screen">
       <div className="auth-header">
+        <div className="brand-mark">IB</div>
         <h1>IBELL MOBILE</h1>
         <p>Daybook — Party Ledger</p>
       </div>

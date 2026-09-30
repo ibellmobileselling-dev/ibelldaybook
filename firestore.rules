@@ -1,18 +1,47 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    // Updates must pass both checks so a doc can't be reassigned to another user.
+    function ownsExisting() {
+      return signedIn()
+        && request.auth.uid == resource.data.userId;
+    }
+
+    function ownsIncoming() {
+      return signedIn()
+        && request.auth.uid == request.resource.data.userId;
+    }
+
+    function validParty(d) {
+      return d.name is string && d.name.size() > 0
+        && d.openingBalance is number;
+    }
+
+    function validTxn(d) {
+      return d.partyId is string && d.partyId.size() > 0
+        && d.type in ['in', 'out']
+        && d.amount is number && d.amount > 0
+        && d.date is string;
+    }
+
     match /users/{uid} {
-      allow read, write: if request.auth != null && request.auth.uid == uid;
+      allow read, write: if signedIn() && request.auth.uid == uid;
     }
 
     match /parties/{partyId} {
-      allow create: if request.auth != null && request.auth.uid == request.resource.data.userId;
-      allow read, update, delete: if request.auth != null && request.auth.uid == resource.data.userId;
+      allow read, delete: if ownsExisting();
+      allow create: if ownsIncoming() && validParty(request.resource.data);
+      allow update: if ownsExisting() && ownsIncoming() && validParty(request.resource.data);
     }
 
     match /transactions/{txnId} {
-      allow create: if request.auth != null && request.auth.uid == request.resource.data.userId;
-      allow read, update, delete: if request.auth != null && request.auth.uid == resource.data.userId;
+      allow read, delete: if ownsExisting();
+      allow create: if ownsIncoming() && validTxn(request.resource.data);
+      allow update: if ownsExisting() && ownsIncoming() && validTxn(request.resource.data);
     }
   }
 }

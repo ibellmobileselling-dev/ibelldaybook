@@ -5,7 +5,7 @@ import Login from "./pages/Login";
 import Signup from "./pages/Signup";
 import Dashboard from "./pages/Dashboard";
 import PartyLedger from "./pages/PartyLedger";
-import ScanAdd from "./pages/ScanAdd";
+import DayEntry from "./pages/DayEntry";
 import Reports from "./pages/Reports";
 import Settings from "./pages/Settings";
 
@@ -26,7 +26,7 @@ function AppRoutes() {
       <Route path="/signup" element={user ? <Navigate to="/" replace /> : <Signup />} />
       <Route path="/" element={<PrivateRoute><Dashboard /></PrivateRoute>} />
       <Route path="/party/:partyId" element={<PrivateRoute><PartyLedger /></PrivateRoute>} />
-      <Route path="/scan" element={<PrivateRoute><ScanAdd /></PrivateRoute>} />
+      <Route path="/scan" element={<PrivateRoute><DayEntry /></PrivateRoute>} />
       <Route path="/reports" element={<PrivateRoute><Reports /></PrivateRoute>} />
       <Route path="/settings" element={<PrivateRoute><Settings /></PrivateRoute>} />
       <Route path="*" element={<Navigate to="/" replace />} />

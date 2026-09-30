@@ -10,7 +10,7 @@ export default function BottomNav() {
       </NavLink>
       <NavLink to="/scan" className={({ isActive }) => `nav-item ${isActive ? "active" : ""}`}>
         <span className="nav-icon"><CameraIcon /></span>
-        <span>Scan</span>
+        <span>Day Entry</span>
       </NavLink>
       <NavLink to="/reports" className={({ isActive }) => `nav-item ${isActive ? "active" : ""}`}>
         <span className="nav-icon"><FileTextIcon /></span>

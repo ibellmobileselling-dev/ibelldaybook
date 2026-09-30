@@ -1,11 +1,13 @@
 import { useEffect, useState } from "react";
 import jsPDF from "jspdf";
-import autoTable from "jspdf-autotable";
+import autoTable from "jspdf-autotable/es";
 import { useAuth } from "../context/AuthContext";
 import { listenParties } from "../services/parties";
 import { listenAllTransactions } from "../services/transactions";
 import TopBar from "../components/TopBar";
 import BottomNav from "../components/BottomNav";
+import { signedAmount, compareTxns } from "../utils/ledger";
+import { drawText, canvasTextHooks } from "../utils/pdfText";
 
 export default function Reports() {
   const { user } = useAuth();
@@ -25,14 +27,14 @@ export default function Reports() {
   function buildRowsForParty(party) {
     const partyTxns = txns
       .filter((t) => t.partyId === party.id)
-      .sort((a, b) => (a.date || "").localeCompare(b.date || ""));
+      .sort(compareTxns);
     let running = Number(party.openingBalance) || 0;
     const rows = [];
     if (party.openingBalance) {
       rows.push(["-", party.name, "Opening Balance", "", "", running.toFixed(2)]);
     }
     for (const t of partyTxns) {
-      running += t.type === "in" ? t.amount : -t.amount;
+      running += signedAmount(t);
       rows.push([
         t.date,
         party.name,
@@ -48,12 +50,9 @@ export default function Reports() {
   function downloadPdf(party) {
     const doc = new jsPDF();
     const title = party ? `Ledger — ${party.name}` : "Full Daybook Ledger";
-    doc.setFontSize(16);
-    doc.text("IBELL MOBILE", 14, 16);
-    doc.setFontSize(11);
-    doc.text(title, 14, 24);
-    doc.setFontSize(9);
-    doc.text(`Generated: ${new Date().toLocaleString("en-IN")}`, 14, 30);
+    drawText(doc, "IBELL MOBILE", 14, 16, { fontSize: 16 });
+    drawText(doc, title, 14, 24, { fontSize: 11 });
+    drawText(doc, `Generated: ${new Date().toLocaleString("en-IN")}`, 14, 30, { fontSize: 9 });
 
     const rows = party
       ? buildRowsForParty(party)
@@ -65,6 +64,8 @@ export default function Reports() {
       body: rows,
       styles: { fontSize: 8 },
       headStyles: { fillColor: [14, 161, 87] },
+      // 182mm = A4 width minus the default 14mm margins
+      ...canvasTextHooks([20, 36, 60, 22, 22, 22]),
     });
 
     const filename = party ? `ledger-${party.name.replace(/\s+/g, "_")}.pdf` : "ledger-full.pdf";

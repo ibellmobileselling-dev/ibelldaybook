@@ -64,3 +64,45 @@ export function LogoutIcon(props) {
     </svg>
   );
 }
+
+export function SearchIcon(props) {
+  return (
+    <svg {...base} {...props}>
+      <circle cx="11" cy="11" r="7" />
+      <path d="m20 20-3.5-3.5" />
+    </svg>
+  );
+}
+
+export function PlusIcon(props) {
+  return (
+    <svg {...base} {...props}>
+      <path d="M12 5v14M5 12h14" />
+    </svg>
+  );
+}
+
+export function TrashIcon(props) {
+  return (
+    <svg {...base} {...props}>
+      <path d="M4 7h16M10 11v6M14 11v6" />
+      <path d="M6 7l1 12a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2l1-12M9 7V4h6v3" />
+    </svg>
+  );
+}
+
+export function ArrowDownLeftIcon(props) {
+  return (
+    <svg {...base} {...props}>
+      <path d="M17 7 7 17M16 17H7V8" />
+    </svg>
+  );
+}
+
+export function ArrowUpRightIcon(props) {
+  return (
+    <svg {...base} {...props}>
+      <path d="M7 17 17 7M8 7h9v9" />
+    </svg>
+  );
+}
