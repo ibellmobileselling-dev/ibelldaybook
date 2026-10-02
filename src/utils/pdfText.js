@@ -91,7 +91,9 @@ function renderUncached(text, { fontSize, color, bold, maxWidthMm }) {
 export function drawText(doc, text, x, y, { fontSize, color = 0, bold = false } = {}) {
   if (!needsCanvas(text)) {
     doc.setFontSize(fontSize);
+    doc.setFont(undefined, bold ? "bold" : "normal");
     doc.text(text, x, y);
+    doc.setFont(undefined, "normal");
     return;
   }
   const img = renderTextImage(text, { fontSize, color, bold });

@@ -12,6 +12,7 @@ import {
 } from "firebase/firestore";
 import { db } from "../firebase/config";
 import { partiesCol, partyData } from "./parties";
+import { cashAccountId } from "./accounts";
 import { todayLocal, compareTxns } from "../utils/ledger";
 
 const txnCol = collection(db, "transactions");
@@ -41,13 +42,20 @@ function toTxn(d) {
   return { id: d.id, ...d.data({ serverTimestamps: "estimate" }) };
 }
 
-function txnData(userId, { partyId, type, amount, remark, date, fromOcr }) {
+// type: "in" | "out" (with a partyId or free-text particulars) or "transfer"
+// (accountId → toAccountId). Every field is always written so security rules
+// can validate without missing-field errors.
+function txnData(userId, { partyId, particulars, type, amount, remark, date, fromOcr, accountId, toAccountId }) {
+  const isTransfer = type === "transfer";
   return {
     userId,
-    partyId,
     type,
+    partyId: isTransfer ? null : partyId || null,
+    particulars: isTransfer ? "" : (particulars || "").trim(),
+    accountId: accountId || cashAccountId(userId),
+    toAccountId: isTransfer ? toAccountId : null,
     amount: Number(amount),
-    remark: remark || "",
+    remark: (remark || "").trim(),
     date: date || todayLocal(),
     fromOcr: !!fromOcr,
     createdAt: serverTimestamp(),
@@ -58,25 +66,19 @@ export function addTransaction(userId, txn) {
   return addDoc(txnCol, txnData(userId, txn));
 }
 
-// Creates a party and its first transaction atomically. The party id is
-// generated client-side so callers can navigate without waiting for the server.
-export function addTransactionWithNewParty(userId, party, txn) {
-  const partyRef = doc(partiesCol);
-  const batch = writeBatch(db);
-  batch.set(partyRef, partyData(userId, party));
-  batch.set(doc(txnCol), txnData(userId, { ...txn, partyId: partyRef.id }));
-  return { partyId: partyRef.id, committed: batch.commit() };
+export function addTransfer(userId, { fromAccountId, toAccountId, amount, remark, date }) {
+  return addDoc(txnCol, txnData(userId, { type: "transfer", accountId: fromAccountId, toAccountId, amount, remark, date }));
 }
 
-// Saves a whole day's entries at once. Each row has either a partyId or a
-// newPartyName; rows sharing a new name get one new party. Firestore caps a
-// batch at 500 writes, so large days are split into several batches.
+// Saves a whole day's entries at once. Each row has a partyId, a newPartyName
+// (rows sharing a new name get one new party) or just particulars. Firestore
+// caps a batch at 500 writes, so large days are split into several batches.
 export function addDayEntries(userId, date, rows) {
   const newPartyIds = new Map();
   const writes = [];
   for (const row of rows) {
-    let partyId = row.partyId;
-    if (!partyId) {
+    let partyId = row.partyId || null;
+    if (!partyId && row.newPartyName) {
       const key = row.newPartyName.trim().toLowerCase();
       partyId = newPartyIds.get(key);
       if (!partyId) {

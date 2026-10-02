@@ -21,11 +21,29 @@ service cloud.firestore {
         && d.openingBalance is number;
     }
 
+    function hasText(d, key) {
+      return d.get(key, null) is string && d.get(key, null).size() > 0;
+    }
+
+    // In/Out need a party or free-text particulars; a transfer needs two
+    // different accounts. Older entries without accountId still read fine.
     function validTxn(d) {
-      return d.partyId is string && d.partyId.size() > 0
-        && d.type in ['in', 'out']
-        && d.amount is number && d.amount > 0
-        && d.date is string;
+      return d.amount is number && d.amount > 0
+        && d.date is string
+        && (
+          (d.type in ['in', 'out'] && (hasText(d, 'partyId') || hasText(d, 'particulars')))
+          || (d.type == 'transfer'
+              && hasText(d, 'accountId') && hasText(d, 'toAccountId')
+              && d.accountId != d.toAccountId)
+        );
+    }
+
+    function validAccount(d, accountId) {
+      return d.kind in ['cash', 'bank']
+        && d.name is string
+        && d.openingBalance is number
+        // the Cash account always uses the id "<uid>_cash"
+        && (d.kind == 'bank' || accountId == request.auth.uid + '_cash');
     }
 
     match /users/{uid} {
@@ -36,6 +54,13 @@ service cloud.firestore {
       allow read, delete: if ownsExisting();
       allow create: if ownsIncoming() && validParty(request.resource.data);
       allow update: if ownsExisting() && ownsIncoming() && validParty(request.resource.data);
+    }
+
+    match /accounts/{accountId} {
+      allow read: if ownsExisting();
+      allow delete: if ownsExisting() && resource.data.kind == 'bank';
+      allow create: if ownsIncoming() && validAccount(request.resource.data, accountId);
+      allow update: if ownsExisting() && ownsIncoming() && validAccount(request.resource.data, accountId);
     }
 
     match /transactions/{txnId} {

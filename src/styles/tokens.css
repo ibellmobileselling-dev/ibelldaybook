@@ -1,0 +1,215 @@
+/* Design tokens: the only place colour, radius, spacing and motion values live.
+   See DESIGN.md §4–5. Contrast of every text pair is checked (≥ 4.5:1). */
+
+:root {
+  /* ---- Colour roles (light) ---- */
+  --color-surface: #f4f5f7;
+  --color-surface-container-low: #fafbfc;
+  --color-surface-container: #ffffff;
+  --color-surface-container-high: #f1f3f6;
+  --color-surface-container-highest: #e7eaef;
+  --color-on-surface: #0f172a;
+  --color-on-surface-variant: #4f5b6d;
+  --color-outline: #8592a3;
+  --color-outline-variant: rgba(15, 23, 42, 0.1);
+
+  --color-primary: #0a7d42;
+  --color-on-primary: #ffffff;
+  --color-primary-container: #d9f2e4;
+  --color-on-primary-container: #063d20;
+
+  --color-status-success: #087a40;
+  --color-status-success-container: #d9f2e4;
+  --color-status-urgent: #c4343a;
+  --color-status-urgent-container: #fde8e9;
+  --color-on-status-urgent: #ffffff;
+  --color-status-caution: #8a4b00;
+  --color-status-caution-container: #fdf0d5;
+  --color-error: #c4343a;
+
+  --color-scrim: rgba(2, 6, 23, 0.45);
+  --color-ambient: radial-gradient(70% 45% at 100% 0%, rgba(10, 125, 66, 0.1) 0%, transparent 70%),
+    radial-gradient(60% 40% at 0% 100%, rgba(10, 125, 66, 0.07) 0%, transparent 70%);
+  /* Balance card: solid tonal content surface */
+  --color-hero: #0d3a25;
+  --color-on-hero: #ffffff;
+  --color-on-hero-variant: rgba(255, 255, 255, 0.78);
+  --color-hero-success: #8ff0c0;
+  --color-hero-urgent: #ffb3b6;
+  --color-hero-tile: rgba(255, 255, 255, 0.08);
+  --color-hero-tile-border: rgba(255, 255, 255, 0.12);
+
+  /* ---- Glass recipe (DESIGN.md §4.1) ---- */
+  --glass-fill-small: rgba(255, 255, 255, 0.62);
+  --glass-fill-large: rgba(255, 255, 255, 0.76);
+  --glass-fill-small-opaque: rgba(241, 243, 246, 0.88);
+  --glass-fill-large-opaque: rgba(241, 243, 246, 0.97);
+  --glass-blur-small: 24px;
+  --glass-blur-large: 32px;
+  --glass-rim: linear-gradient(135deg, rgba(255, 255, 255, 0.35), rgba(255, 255, 255, 0) 60%);
+  --glass-shadow-small: 0 6px 18px -6px rgba(15, 23, 42, 0.18);
+  --glass-shadow-large: 0 12px 32px -10px rgba(15, 23, 42, 0.18);
+  --glass-tint: color-mix(in srgb, var(--glass-fill-small) 65%, var(--color-primary) 35%);
+  --glass-tint-urgent: color-mix(in srgb, var(--glass-fill-small) 65%, var(--color-status-urgent) 35%);
+  --glass-press-glow: rgba(255, 255, 255, 0.18);
+
+  /* ---- Shape (concentric: inner = outer − padding, min 8) ---- */
+  --radius-sheet: 28px;
+  --radius-card: 24px;
+  --radius-section: 20px;
+  --radius-control: 14px;
+  --radius-capsule: 999px;
+  --radius-min: 8px;
+  /* Derived inner radii (concentric): outer − padding, never below 8 */
+  --radius-sheet-inner: max(var(--radius-min), calc(var(--radius-sheet) - var(--space-4)));
+  --radius-card-inner: max(var(--radius-min), calc(var(--radius-card) - var(--space-4)));
+  --radius-section-inner: max(var(--radius-min), calc(var(--radius-section) - var(--space-3)));
+
+  /* ---- Spacing scale ---- */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-7: 32px;
+  --space-8: 48px;
+
+  /* ---- Chrome sizes ---- */
+  --capsule-h: 52px;
+  --capsule-pad: 4px;
+  --capsule-child: 44px;
+  --chrome-top: calc(var(--capsule-h) + var(--space-3) * 2 + env(safe-area-inset-top));
+  --chrome-bottom: calc(var(--capsule-h) + 12px + 12px + env(safe-area-inset-bottom));
+
+  /* ---- Type ---- */
+  --font-sans: system-ui, -apple-system, "Segoe UI", Roboto, "Noto Sans", "Noto Sans Gujarati", "Nirmala UI", sans-serif;
+
+  /* ---- Motion (DESIGN.md §5). Springs are sampled linear() curves. ---- */
+  --dur-micro: 120ms;
+  --dur-short: 200ms;
+  --dur-medium: 300ms;
+  --dur-long: 380ms;
+  --ease-standard: cubic-bezier(0.2, 0, 0, 1);
+  --ease-emphasized: cubic-bezier(0.2, 0, 0, 1);
+  --ease-decelerate: cubic-bezier(0.05, 0.7, 0.1, 1);
+  --offset-enter-card: 12px;
+  --offset-enter-row: 8px;
+  --offset-axis: 30px;
+  --press-scale: 0.96;
+
+  --spring-press-dur: 230ms;
+  --spring-release-dur: 590ms;
+  --spring-select-dur: 370ms;
+  --spring-morph-dur: 430ms;
+  --spring-settle-dur: 310ms;
+  --spring-press: var(--ease-emphasized);
+  --spring-release: var(--ease-emphasized);
+  --spring-select: var(--ease-emphasized);
+  --spring-morph: var(--ease-emphasized);
+  --spring-settle: var(--ease-emphasized);
+
+  color-scheme: light;
+}
+
+@supports (transition-timing-function: linear(0, 1)) {
+  :root {
+    --spring-press: linear(0, 0.021, 0.074, 0.145, 0.224, 0.306, 0.386, 0.462, 0.532, 0.595, 0.652, 0.702, 0.746, 0.785, 0.818, 0.846, 0.871, 0.891, 0.909, 0.924, 0.937, 0.947, 0.956, 0.963, 0.97, 0.975, 0.979, 0.983, 0.986, 0.988, 0.99, 0.992, 0.993, 0.995, 0.996, 0.996, 0.997, 0.998, 0.998, 0.998, 1);
+    --spring-release: linear(0, 0.039, 0.138, 0.273, 0.424, 0.576, 0.717, 0.84, 0.941, 1.018, 1.072, 1.106, 1.123, 1.126, 1.119, 1.105, 1.087, 1.068, 1.049, 1.032, 1.017, 1.005, 0.996, 0.99, 0.986, 0.984, 0.984, 0.985, 0.987, 0.99, 0.992, 0.994, 0.997, 0.998, 1, 1.001, 1.001, 1.002, 1.002, 1.002, 1);
+    --spring-select: linear(0, 0.019, 0.069, 0.139, 0.221, 0.308, 0.397, 0.483, 0.565, 0.639, 0.707, 0.766, 0.818, 0.862, 0.898, 0.929, 0.954, 0.973, 0.988, 1, 1.008, 1.013, 1.017, 1.019, 1.02, 1.02, 1.019, 1.018, 1.016, 1.014, 1.012, 1.011, 1.009, 1.008, 1.006, 1.005, 1.004, 1.003, 1.002, 1.002, 1);
+    --spring-morph: linear(0, 0.02, 0.07, 0.14, 0.221, 0.308, 0.395, 0.479, 0.558, 0.63, 0.695, 0.753, 0.803, 0.845, 0.881, 0.911, 0.936, 0.955, 0.971, 0.983, 0.993, 0.999, 1.004, 1.008, 1.01, 1.011, 1.011, 1.011, 1.01, 1.01, 1.009, 1.008, 1.007, 1.006, 1.005, 1.004, 1.004, 1.003, 1.002, 1.002, 1);
+    --spring-settle: linear(0, 0.021, 0.072, 0.141, 0.219, 0.3, 0.379, 0.454, 0.523, 0.587, 0.643, 0.694, 0.738, 0.777, 0.811, 0.84, 0.865, 0.886, 0.904, 0.92, 0.933, 0.944, 0.953, 0.961, 0.968, 0.973, 0.978, 0.981, 0.985, 0.987, 0.989, 0.991, 0.993, 0.994, 0.995, 0.996, 0.997, 0.997, 0.998, 0.998, 1);
+  }
+}
+
+/* ---- Dark ---- */
+@media (prefers-color-scheme: dark) {
+  :root {
+    --color-surface: #0b0f14;
+    --color-surface-container-low: #10151b;
+    --color-surface-container: #141a21;
+    --color-surface-container-high: #1a2129;
+    --color-surface-container-highest: #222a33;
+    --color-on-surface: #e8edf2;
+    --color-on-surface-variant: #a3b0bf;
+    --color-outline: #5d6a79;
+    --color-outline-variant: rgba(255, 255, 255, 0.09);
+
+    --color-primary: #34d08a;
+    --color-on-primary: #04210f;
+    --color-primary-container: #123a27;
+    --color-on-primary-container: #b9f2d3;
+
+    --color-status-success: #3ddc93;
+    --color-status-success-container: #123a27;
+    --color-status-urgent: #ff7d81;
+    --color-status-urgent-container: #3a1719;
+    --color-on-status-urgent: #2a0607;
+    --color-status-caution: #fbbf24;
+    --color-status-caution-container: #3a2a0b;
+    --color-error: #ff7d81;
+
+    --color-scrim: rgba(0, 0, 0, 0.6);
+    --color-ambient: radial-gradient(70% 45% at 100% 0%, rgba(52, 208, 138, 0.1) 0%, transparent 70%),
+      radial-gradient(60% 40% at 0% 100%, rgba(52, 208, 138, 0.06) 0%, transparent 70%);
+    --color-hero: #123a27;
+
+    --glass-fill-small: rgba(20, 26, 33, 0.62);
+    --glass-fill-large: rgba(20, 26, 33, 0.76);
+    --glass-fill-small-opaque: rgba(26, 33, 41, 0.88);
+    --glass-fill-large-opaque: rgba(26, 33, 41, 0.97);
+    --glass-rim: linear-gradient(135deg, rgba(255, 255, 255, 0.14), rgba(255, 255, 255, 0) 60%);
+    --glass-shadow-small: 0 6px 18px -6px rgba(0, 0, 0, 0.4);
+    --glass-shadow-large: 0 12px 32px -10px rgba(0, 0, 0, 0.4);
+    --glass-press-glow: rgba(255, 255, 255, 0.1);
+
+    color-scheme: dark;
+  }
+}
+
+/* ---- Increase contrast: ≥ 7:1, opaque glass, visible outlines ---- */
+@media (prefers-contrast: more) {
+  :root {
+    --color-on-surface-variant: #1e2633;
+    --color-outline: #0f172a;
+    --color-outline-variant: #0f172a;
+    --color-primary: #05582d;
+    --color-status-success: #05582d;
+    --color-status-urgent: #8f1d22;
+    --color-status-caution: #5c3200;
+    --glass-fill-small: var(--color-surface-container);
+    --glass-fill-large: var(--color-surface-container);
+    --glass-tint: var(--color-surface-container);
+    --glass-tint-urgent: var(--color-surface-container);
+    --glass-rim: none;
+  }
+}
+@media (prefers-contrast: more) and (prefers-color-scheme: dark) {
+  :root {
+    --color-on-surface-variant: #e8edf2;
+    --color-outline: #e8edf2;
+    --color-outline-variant: #e8edf2;
+    --color-primary: #7cf0b8;
+    --color-status-success: #7cf0b8;
+    --color-status-urgent: #ffb3b6;
+    --color-status-caution: #fde68a;
+  }
+}
+
+/* ---- Reduce motion: every spring settles, nothing travels or scales ---- */
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --spring-press: var(--ease-standard);
+    --spring-release: var(--ease-standard);
+    --spring-select: var(--ease-standard);
+    --spring-morph: var(--ease-standard);
+    --spring-press-dur: var(--dur-micro);
+    --spring-release-dur: var(--dur-micro);
+    --spring-select-dur: var(--dur-micro);
+    --spring-morph-dur: var(--dur-short);
+    --offset-enter-card: 0px;
+    --offset-enter-row: 0px;
+    --offset-axis: 0px;
+    --press-scale: 1;
+  }
+}

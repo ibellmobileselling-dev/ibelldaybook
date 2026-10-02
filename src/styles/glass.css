@@ -1,0 +1,346 @@
+/* Glass surfaces, press feedback, selection pill, scroll edge, skeletons.
+   DESIGN.md §4.1, §5, §6. Screens use these classes; they never redefine them. */
+
+/* ---------- Glass (Tier B by default: no blur) ---------- */
+.glass,
+.glass--large {
+  position: relative;
+  isolation: isolate;
+  color: var(--color-on-surface);
+  background: var(--glass-fill-small-opaque);
+  box-shadow: var(--glass-shadow-small);
+}
+.glass--large {
+  background: var(--glass-fill-large-opaque);
+  box-shadow: var(--glass-shadow-large);
+}
+/* Rim highlight: 1px gradient stroke, top-leading → transparent */
+.glass::before,
+.glass--large::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  border-radius: inherit;
+  padding: 1px;
+  background: var(--glass-rim);
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask: linear-gradient(#000 0 0) content-box exclude, linear-gradient(#000 0 0);
+  pointer-events: none;
+}
+.glass {
+  border: 1px solid var(--color-outline-variant);
+}
+.glass--large {
+  border: 1px solid var(--color-outline-variant);
+}
+
+/* Tier A: real backdrop blur where supported */
+@supports (backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px)) {
+  .glass {
+    background: var(--glass-fill-small);
+    -webkit-backdrop-filter: saturate(180%) blur(var(--glass-blur-small));
+    backdrop-filter: saturate(180%) blur(var(--glass-blur-small));
+  }
+  .glass--large {
+    background: var(--glass-fill-large);
+    -webkit-backdrop-filter: saturate(180%) blur(var(--glass-blur-large));
+    backdrop-filter: saturate(180%) blur(var(--glass-blur-large));
+  }
+}
+
+/* Tinted glass: the one primary action per surface (a tone, not a solid fill) */
+.glass.glass--tinted {
+  background: var(--glass-tint);
+  color: var(--color-on-primary-container);
+}
+.glass.glass--tinted-urgent {
+  background: var(--glass-tint-urgent);
+  color: var(--color-on-surface);
+}
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .glass.glass--tinted { background: var(--color-primary-container); }
+  .glass.glass--tinted-urgent { background: var(--color-status-urgent-container); }
+}
+
+/* Identity: Reduce Transparency → opaque + outline, no blur, no rim */
+@media (prefers-reduced-transparency: reduce) {
+  .glass,
+  .glass--large {
+    background: var(--color-surface-container-high);
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+    border: 1px solid var(--color-outline-variant);
+  }
+  .glass::before,
+  .glass--large::before { display: none; }
+  .glass.glass--tinted { background: var(--color-primary-container); }
+  .glass.glass--tinted-urgent { background: var(--color-status-urgent-container); }
+}
+
+/* Increase Contrast: opaque glass, 1.5px on-surface outline, no tint */
+@media (prefers-contrast: more) {
+  .glass,
+  .glass--large,
+  .glass.glass--tinted,
+  .glass.glass--tinted-urgent {
+    background: var(--color-surface-container);
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+    border: 1.5px solid var(--color-on-surface);
+    color: var(--color-on-surface);
+  }
+  .glass::before,
+  .glass--large::before { display: none; }
+}
+
+/* ---------- Glass capsule group ---------- */
+.capsule {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  height: var(--capsule-h);
+  padding: var(--capsule-pad);
+  border-radius: var(--radius-capsule);
+}
+.capsule-btn {
+  min-width: var(--capsule-child);
+  height: var(--capsule-child);
+  padding: 0 var(--space-3);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  border: none;
+  border-radius: var(--radius-capsule);
+  background: transparent;
+  color: inherit;
+  font-size: 15px;
+  font-weight: 650;
+  cursor: pointer;
+}
+.capsule-btn.icon-only { padding: 0; width: var(--capsule-child); }
+
+/* ---------- Press feedback (pattern A) ---------- */
+.press {
+  position: relative;
+  overflow: hidden;
+  transition: transform var(--spring-release-dur) var(--spring-release);
+  -webkit-tap-highlight-color: transparent;
+}
+.press:active {
+  transform: scale(var(--press-scale));
+  transition: transform var(--spring-press-dur) var(--spring-press);
+}
+/* Glow from the touch point; --px/--py set by src/design/motion.js */
+.press::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: radial-gradient(circle at var(--px, 50%) var(--py, 50%), var(--glass-press-glow) 0%, transparent 65%);
+  opacity: 0;
+  transition: opacity 160ms var(--ease-standard);
+  pointer-events: none;
+}
+.press:active::after {
+  opacity: 1;
+  transition: opacity 220ms var(--ease-standard);
+}
+@media (hover: hover) {
+  .press:hover { background-color: color-mix(in srgb, currentColor 4%, transparent); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .press::after { display: none; }
+}
+
+/* Content rows: pressed overlay only, no bounce */
+.press-content { position: relative; }
+.press-content::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: var(--color-on-surface);
+  opacity: 0;
+  transition: opacity var(--dur-micro) var(--ease-standard);
+  pointer-events: none;
+}
+.press-content:active::after { opacity: 0.06; }
+
+/* Visible keyboard focus */
+:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
+/* ---------- Selection pill (one selection language) ---------- */
+.segmented {
+  position: relative;
+  display: flex;
+  padding: var(--capsule-pad);
+  border-radius: var(--radius-capsule);
+  background: var(--color-surface-container-high);
+  border: 1px solid var(--color-outline-variant);
+}
+.segmented-pill {
+  position: absolute;
+  top: var(--capsule-pad);
+  bottom: var(--capsule-pad);
+  left: 0;
+  border-radius: var(--radius-capsule);
+  background: var(--pill-bg, var(--color-primary));
+  transition: transform var(--spring-select-dur) var(--spring-select), width var(--spring-select-dur) var(--spring-select),
+    background-color var(--dur-micro) var(--ease-standard);
+  pointer-events: none;
+}
+.segmented-option {
+  position: relative;
+  z-index: 1;
+  flex: 1;
+  min-height: 40px;
+  padding: 0 var(--space-3);
+  border: none;
+  border-radius: var(--radius-capsule);
+  background: transparent;
+  color: var(--color-on-surface-variant);
+  font-size: 14px;
+  font-weight: 650;
+  cursor: pointer;
+  transition: color var(--dur-micro) var(--ease-standard);
+  white-space: nowrap;
+}
+.segmented-option[aria-checked="true"] { color: var(--pill-fg, var(--color-on-primary)); }
+@media (prefers-contrast: more) {
+  .segmented { border: 1.5px solid var(--color-on-surface); }
+}
+
+/* ---------- Scroll edge (pattern H, soft) ---------- */
+.scroll-edge {
+  position: fixed;
+  left: 50%;
+  width: min(100%, 480px);
+  transform: translateX(-50%);
+  height: 24px;
+  pointer-events: none;
+  z-index: 19;
+  opacity: 0;
+  transition: opacity var(--dur-micro) var(--ease-standard);
+}
+.scroll-edge.top {
+  top: 0;
+  height: calc(var(--chrome-top) + 24px);
+  background: linear-gradient(var(--color-surface) 0%, var(--color-surface) calc(100% - 24px), transparent);
+  opacity: 0;
+}
+.scroll-edge.top.on { opacity: 0.92; }
+.scroll-edge.bottom {
+  bottom: 0;
+  height: calc(var(--chrome-bottom) + 24px);
+  background: linear-gradient(transparent, var(--color-surface) 24px, var(--color-surface));
+}
+.scroll-edge.bottom.on { opacity: 0.92; }
+
+/* ---------- Skeleton (pattern D) ---------- */
+.skeleton {
+  border-radius: var(--radius-control);
+  background: linear-gradient(90deg, var(--color-surface-container-highest) 0%, var(--color-surface-container-high) 50%, var(--color-surface-container-highest) 100%);
+  background-size: 200% 100%;
+  animation: shimmer 1.2s linear infinite;
+}
+@keyframes shimmer {
+  from { background-position: 100% 0; }
+  to { background-position: -100% 0; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .skeleton { animation: none; }
+}
+
+/* ---------- Motion patterns ---------- */
+/* B. Shared-axis X on screen switch (direction from nav order) */
+.route-enter {
+  animation: axis-in var(--dur-medium) var(--ease-emphasized) backwards;
+}
+.route-enter[data-dir="back"] { --axis-from: calc(var(--offset-axis) * -1); }
+@keyframes axis-in {
+  from { opacity: 0; transform: translateX(var(--axis-from, var(--offset-axis))); }
+}
+
+/* C. Fade-through when a filter changes the content layout */
+.fade-through {
+  animation: fade-through var(--dur-short) var(--ease-decelerate) backwards;
+}
+@keyframes fade-through {
+  from { opacity: 0; transform: scale(0.98); }
+}
+
+/* D. First-load cascade (first visible items only; set --i inline, capped at 8) */
+.cascade {
+  animation: rise var(--dur-short) var(--ease-decelerate) backwards;
+  animation-delay: calc(min(var(--i, 0), 8) * 18ms);
+}
+@keyframes rise {
+  from { opacity: 0; transform: translateY(var(--offset-enter-row)); }
+}
+
+/* F. Popover grows from its source */
+.popover-in {
+  transform-origin: top center;
+  animation: popover-in var(--spring-morph-dur) var(--spring-morph) backwards;
+}
+@keyframes popover-in {
+  from { opacity: 0; transform: scale(0.6); }
+}
+
+/* G. Sheet materializes from the bottom; scrim fades */
+.scrim-in { animation: scrim-in var(--dur-short) var(--ease-standard) backwards; }
+@keyframes scrim-in { from { opacity: 0; } }
+.sheet-in {
+  transform-origin: bottom center;
+  animation: sheet-in var(--spring-morph-dur) var(--spring-morph) backwards;
+}
+@keyframes sheet-in {
+  from { opacity: 0; transform: translateY(40%) scale(0.92); box-shadow: none; }
+}
+
+/* Closing returns the sheet into the bottom edge; scrim fades out */
+.sheet-out {
+  transform-origin: bottom center;
+  animation: sheet-out 220ms var(--ease-standard) forwards;
+}
+@keyframes sheet-out {
+  to { opacity: 0; transform: translateY(30%) scale(0.96); }
+}
+.scrim-out { animation: scrim-out 220ms var(--ease-standard) forwards; }
+@keyframes scrim-out { to { opacity: 0; } }
+
+/* G. Error shake (decaying), replaced by colour only under Reduce Motion */
+.shake { animation: shake 360ms var(--ease-standard); }
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  20% { transform: translateX(-8px); }
+  40% { transform: translateX(6px); }
+  60% { transform: translateX(-4px); }
+  80% { transform: translateX(2px); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .route-enter,
+  .fade-through,
+  .cascade,
+  .popover-in,
+  .sheet-in {
+    animation-name: fade-only;
+    animation-duration: var(--dur-short);
+    animation-timing-function: var(--ease-standard);
+    animation-delay: 0ms;
+  }
+  .sheet-out {
+    animation-name: fade-out-only;
+    animation-duration: var(--dur-short);
+  }
+  .shake { animation: none; }
+}
+@keyframes fade-only { from { opacity: 0; } }
+@keyframes fade-out-only { to { opacity: 0; } }

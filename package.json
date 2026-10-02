@@ -7,9 +7,11 @@
     "dev": "vite",
     "build": "vite build",
     "lint": "oxlint",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "test": "node --test src/utils/"
   },
   "dependencies": {
+    "exceljs": "^4.4.0",
     "firebase": "^11.0.0",
     "jspdf": "^2.5.2",
     "jspdf-autotable": "^3.8.4",

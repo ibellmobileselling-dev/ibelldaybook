@@ -106,3 +106,75 @@ export function ArrowUpRightIcon(props) {
     </svg>
   );
 }
+
+export function BankIcon(props) {
+  return (
+    <svg {...base} {...props}>
+      <path d="M3 9.5 12 4l9 5.5" />
+      <path d="M5 10v7M9.5 10v7M14.5 10v7M19 10v7" />
+      <path d="M3 20h18" />
+    </svg>
+  );
+}
+
+export function WalletIcon(props) {
+  return (
+    <svg {...base} {...props}>
+      <path d="M4 7a2 2 0 0 1 2-2h11v4" />
+      <path d="M4 7v11a2 2 0 0 0 2 2h13a1 1 0 0 0 1-1V10a1 1 0 0 0-1-1H6a2 2 0 0 1-2-2Z" />
+      <circle cx="16" cy="14.5" r="1.2" />
+    </svg>
+  );
+}
+
+export function TransferIcon(props) {
+  return (
+    <svg {...base} {...props}>
+      <path d="M4 8h14l-3.5-3.5M20 16H6l3.5 3.5" />
+    </svg>
+  );
+}
+
+export function DownloadIcon(props) {
+  return (
+    <svg {...base} {...props}>
+      <path d="M12 4v11M7 10.5 12 15.5 17 10.5" />
+      <path d="M5 20h14" />
+    </svg>
+  );
+}
+
+export function EditIcon(props) {
+  return (
+    <svg {...base} {...props}>
+      <path d="M4 20h4L19 9a2.1 2.1 0 0 0-3-3L5 17v3Z" />
+      <path d="m14.5 7.5 3 3" />
+    </svg>
+  );
+}
+
+export function BookIcon(props) {
+  return (
+    <svg {...base} {...props}>
+      <path d="M12 6.5C10 5 7.5 4.5 4 4.5v14c3.5 0 6 .5 8 2 2-1.5 4.5-2 8-2v-14c-3.5 0-6 .5-8 2Z" />
+      <path d="M12 6.5v14" />
+    </svg>
+  );
+}
+
+export function RotateIcon(props) {
+  return (
+    <svg {...base} {...props}>
+      <path d="M20 11a8 8 0 1 0-2.34 5.66" />
+      <path d="M20 4v7h-7" />
+    </svg>
+  );
+}
+
+export function MinusIcon(props) {
+  return (
+    <svg {...base} {...props}>
+      <path d="M5 12h14" />
+    </svg>
+  );
+}

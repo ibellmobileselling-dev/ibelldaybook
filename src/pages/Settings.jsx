@@ -1,38 +1,27 @@
-import { useEffect, useState } from "react";
-import { doc, getDoc } from "firebase/firestore";
-import { db } from "../firebase/config";
 import { useAuth } from "../context/AuthContext";
+import { useData } from "../context/DataContext";
 import TopBar from "../components/TopBar";
-import BottomNav from "../components/BottomNav";
 
 export default function Settings() {
   const { user, logout } = useAuth();
-  const [profile, setProfile] = useState(null);
-
-  useEffect(() => {
-    if (!user) return;
-    getDoc(doc(db, "users", user.uid)).then((snap) => {
-      if (snap.exists()) setProfile(snap.data());
-    });
-  }, [user]);
+  const { profile } = useData();
 
   return (
     <>
       <TopBar title="Settings" />
-      <div className="page">
+      <main className="page">
         <div className="settings-list">
-          <div className="settings-card">
-            <div className="row"><span className="k">Shop Name</span><span>{profile?.shopName || "—"}</span></div>
+          <div className="settings-card card">
+            <div className="row"><span className="k">Shop name</span><span>{profile?.shopName || "—"}</span></div>
             <div className="row"><span className="k">Owner</span><span>{profile?.ownerName || "—"}</span></div>
             <div className="row"><span className="k">Phone</span><span>{profile?.phone || "—"}</span></div>
             <div className="row"><span className="k">Email</span><span>{user?.email}</span></div>
           </div>
-          <button className="btn btn-outline btn-block" onClick={logout}>
+          <button className="btn btn-outline btn-block press" onClick={logout}>
             Logout
           </button>
         </div>
-      </div>
-      <BottomNav />
+      </main>
     </>
   );
 }

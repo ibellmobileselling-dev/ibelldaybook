@@ -1,19 +1,28 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
-import { listenParties } from "../services/parties";
+import { useData } from "../context/DataContext";
 import { addDayEntries } from "../services/transactions";
 import TopBar from "../components/TopBar";
 import PartyPicker from "../components/PartyPicker";
-import { CameraIcon } from "../components/Icons";
+import SegmentedControl from "../components/SegmentedControl";
+import AccountSelect from "../components/AccountSelect";
+import { CameraIcon, MinusIcon, PlusIcon, RotateIcon, TrashIcon } from "../components/Icons";
 import { todayLocal, reportWriteError } from "../utils/ledger";
+import { shake } from "../design/motion";
 
 // Long side of the reference photo; large enough to zoom into handwriting.
 const PHOTO_MAX_SIDE = 2400;
 
+const TYPE_OPTIONS = [
+  { value: "in", label: "In", pillBg: "var(--color-status-success)", pillFg: "var(--color-on-primary)" },
+  { value: "out", label: "Out", pillBg: "var(--color-status-urgent)", pillFg: "var(--color-on-status-urgent)" },
+];
+
 let rowSeq = 0;
-function newRow(type = "in") {
-  return { key: `r${Date.now()}-${++rowSeq}`, type, amount: "", partyId: null, name: "", remark: "" };
+// accountId "" means Cash (the default account).
+function newRow(type = "in", accountId = "") {
+  return { key: `r${Date.now()}-${++rowSeq}`, type, amount: "", partyId: null, name: "", noParty: false, remark: "", accountId };
 }
 
 function loadImage(file) {
@@ -85,8 +94,8 @@ function clearDraft(key) {
 export default function DayEntry() {
   const { user } = useAuth();
   const navigate = useNavigate();
+  const { parties, accounts, cashId } = useData();
   const draftKey = `dayEntryDraft:${user.uid}`;
-  const [parties, setParties] = useState([]);
   const [date, setDate] = useState(() => loadDraft(draftKey)?.date || todayLocal());
   const [rows, setRows] = useState(() => loadDraft(draftKey)?.rows || [newRow()]);
   const [showErrors, setShowErrors] = useState(false);
@@ -102,8 +111,6 @@ export default function DayEntry() {
   const amountRefs = useRef({});
   const partyRefs = useRef({});
   const pendingFocus = useRef(null);
-
-  useEffect(() => listenParties(user.uid, setParties), [user.uid]);
 
   useEffect(() => {
     saveDraft(draftKey, { date, rows });
@@ -154,18 +161,20 @@ export default function DayEntry() {
     });
   }
 
-  function addRow(type) {
-    const row = newRow(type);
+  // New lines keep the previous line's account, since a page is usually
+  // written for one till / bank at a time.
+  function addRow(type, accountId = rows[rows.length - 1]?.accountId || "") {
+    const row = newRow(type, accountId);
     setRows((rs) => [...rs, row]);
     pendingFocus.current = { key: row.key, field: "amount" };
   }
 
   // After a party is chosen, jump to the next line's amount, adding a line
-  // (same In/Out side) when this was the last one.
+  // (same In/Out side and account) when this was the last one.
   function handlePartyPicked(index) {
     const next = rows[index + 1];
     if (next) pendingFocus.current = { key: next.key, field: "amount" };
-    else addRow(rows[index].type);
+    else addRow(rows[index].type, rows[index].accountId);
   }
 
   const filled = rows.filter((r) => r.amount !== "" || r.name.trim());
@@ -179,14 +188,15 @@ export default function DayEntry() {
     { in: 0, out: 0 }
   );
   const newPartyNames = [
-    ...new Set(filled.filter((r) => isValid(r) && !r.partyId).map((r) => r.name.trim().toLowerCase())),
+    ...new Set(filled.filter((r) => isValid(r) && !r.partyId && !r.noParty).map((r) => r.name.trim().toLowerCase())),
   ];
 
   function handleSave() {
     if (filled.length === 0) return;
     if (invalidCount > 0) {
       setShowErrors(true);
-      alert(`${invalidCount} line(s) need an amount and a party. They are marked in red.`);
+      requestAnimationFrame(() => document.querySelectorAll(".entry-row.invalid").forEach(shake));
+      alert(`${invalidCount} line(s) need an amount and a party or particulars. They are marked in red.`);
       return;
     }
     const lines = [
@@ -200,8 +210,10 @@ export default function DayEntry() {
       type: r.type,
       amount: r.amount,
       remark: r.remark.trim(),
+      accountId: r.accountId || cashId,
       partyId: r.partyId,
-      newPartyName: r.name.trim(),
+      newPartyName: r.partyId || r.noParty ? null : r.name.trim(),
+      particulars: r.noParty && !r.partyId ? r.name.trim() : "",
     }));
     addDayEntries(user.uid, date, entries).catch(reportWriteError);
     clearDraft(draftKey);
@@ -220,8 +232,8 @@ export default function DayEntry() {
         title="Day Entry"
         onBack={() => navigate(-1)}
         right={
-          <button className="icon-btn" onClick={() => fileInputRef.current?.click()} title="Photo of page">
-            <CameraIcon width={18} height={18} />
+          <button className="capsule-btn icon-only press" onClick={() => fileInputRef.current?.click()} title="Photo of page" aria-label="Photo of page">
+            <CameraIcon width={20} height={20} />
           </button>
         }
       />
@@ -242,9 +254,15 @@ export default function DayEntry() {
             </button>
             {photoOpen && (
               <>
-                <button type="button" onClick={rotate}>Rotate ↻</button>
-                <button type="button" onClick={() => setZoom((z) => Math.max(1, z - 0.5))} disabled={zoom <= 1}>−</button>
-                <button type="button" onClick={() => setZoom((z) => Math.min(4, z + 0.5))} disabled={zoom >= 4}>+</button>
+                <button type="button" className="press" onClick={rotate} aria-label="Rotate photo">
+                  <RotateIcon width={16} height={16} aria-hidden="true" /> Rotate
+                </button>
+                <button type="button" className="press" onClick={() => setZoom((z) => Math.max(1, z - 0.5))} disabled={zoom <= 1} aria-label="Zoom out">
+                  <MinusIcon width={16} height={16} aria-hidden="true" />
+                </button>
+                <button type="button" className="press" onClick={() => setZoom((z) => Math.min(4, z + 0.5))} disabled={zoom >= 4} aria-label="Zoom in">
+                  <PlusIcon width={16} height={16} aria-hidden="true" />
+                </button>
               </>
             )}
           </div>
@@ -256,14 +274,14 @@ export default function DayEntry() {
         </div>
       )}
 
-      <div className="page day-entry">
-        <div className="day-date field">
-          <label>Page date</label>
+      <main className="page day-entry">
+        <label className="day-date field">
+          <span>Page date</span>
           <input type="date" value={date} onChange={(e) => setDate(e.target.value || todayLocal())} />
-        </div>
+        </label>
 
         {!photo && (
-          <button type="button" className="btn btn-outline btn-block" onClick={() => fileInputRef.current?.click()}>
+          <button type="button" className="btn btn-outline btn-block press" onClick={() => fileInputRef.current?.click()}>
             <CameraIcon width={18} height={18} /> Add photo of the page (optional)
           </button>
         )}
@@ -276,14 +294,13 @@ export default function DayEntry() {
               <div key={r.key} className={`entry-row ${r.type} ${bad ? "invalid" : ""}`}>
                 <div className="entry-top">
                   <span className="entry-no">{i + 1}</span>
-                  <div className="entry-type">
-                    <button type="button" className={r.type === "in" ? "sel in" : ""} onClick={() => updateRow(r.key, { type: "in" })}>
-                      In
-                    </button>
-                    <button type="button" className={r.type === "out" ? "sel out" : ""} onClick={() => updateRow(r.key, { type: "out" })}>
-                      Out
-                    </button>
-                  </div>
+                  <SegmentedControl
+                    className="entry-type"
+                    ariaLabel={`Line ${i + 1} in or out`}
+                    options={TYPE_OPTIONS}
+                    value={r.type}
+                    onChange={(type) => updateRow(r.key, { type })}
+                  />
                   <input
                     ref={(el) => (amountRefs.current[r.key] = el)}
                     className="entry-amount"
@@ -300,46 +317,64 @@ export default function DayEntry() {
                       }
                     }}
                   />
-                  <button type="button" className="txn-delete" onClick={() => removeRow(r.key)} aria-label="Remove line" title="Remove line">
-                    ×
+                  <button type="button" className="txn-delete press" onClick={() => removeRow(r.key)} aria-label={`Remove line ${i + 1}`} title="Remove line">
+                    <TrashIcon width={16} height={16} />
                   </button>
                 </div>
                 <PartyPicker
                   parties={sortedParties}
-                  value={{ partyId: r.partyId, name: r.name }}
+                  value={{ partyId: r.partyId, name: r.name, noParty: r.noParty }}
                   onChange={(v) => updateRow(r.key, v)}
                   onPicked={() => handlePartyPicked(i)}
                   inputRef={(el) => (partyRefs.current[r.key] = el)}
+                  allowNoParty
+                  placeholder="Party or particulars"
                 />
                 <div className="entry-bottom">
-                  <input
-                    className="entry-remark"
-                    placeholder="Remark (optional)"
-                    value={r.remark}
-                    onChange={(e) => updateRow(r.key, { remark: e.target.value })}
+                  <AccountSelect
+                    className="entry-account"
+                    accounts={accounts}
+                    value={r.accountId || cashId}
+                    onChange={(accountId) => updateRow(r.key, { accountId })}
                   />
-                  {r.name.trim() && !r.partyId && <span className="entry-badge">New party</span>}
+                  {r.name.trim() && !r.partyId && (
+                    <button
+                      type="button"
+                      className={`entry-badge press ${r.noParty ? "none" : ""}`}
+                      onClick={() => updateRow(r.key, { noParty: !r.noParty })}
+                      aria-label={r.noParty ? "Saved without a party. Tap to create a party instead." : "Will create a new party. Tap to save without a party."}
+                    >
+                      {r.noParty ? "No party" : "New party"}
+                    </button>
+                  )}
                 </div>
+                <input
+                  className="entry-remark"
+                  placeholder="Remark (optional)"
+                  aria-label={`Line ${i + 1} remark`}
+                  value={r.remark}
+                  onChange={(e) => updateRow(r.key, { remark: e.target.value })}
+                />
               </div>
             );
           })}
         </div>
 
         <div className="entry-add">
-          <button type="button" className="btn btn-outline" onClick={() => addRow("in")}>+ In line</button>
-          <button type="button" className="btn btn-outline" onClick={() => addRow("out")}>+ Out line</button>
+          <button type="button" className="btn btn-outline press" onClick={() => addRow("in")}>+ In line</button>
+          <button type="button" className="btn btn-outline press" onClick={() => addRow("out")}>+ Out line</button>
         </div>
         {filled.length > 0 && (
           <button type="button" className="entry-clear" onClick={handleClear}>Clear all lines</button>
         )}
-      </div>
+      </main>
 
-      <div className="day-footer">
+      <div className="day-footer glass">
         <div className="day-totals">
           <span className="in">In {rupees(totals.in)}</span>
           <span className="out">Out {rupees(totals.out)}</span>
         </div>
-        <button type="button" className="btn btn-primary btn-block" disabled={filled.length === 0} onClick={handleSave}>
+        <button type="button" className="btn btn-primary btn-block press" disabled={filled.length === 0} onClick={handleSave}>
           Save {filled.length || ""} {filled.length === 1 ? "entry" : "entries"}
         </button>
       </div>

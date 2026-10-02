@@ -13,8 +13,8 @@ export default defineConfig({
         name: 'IBELL MOBILE Daybook',
         short_name: 'Daybook',
         description: 'Party ledger — cash in/out tracking for IBELL MOBILE',
-        theme_color: '#0EA157',
-        background_color: '#f5f6f8',
+        theme_color: '#0a7d42',
+        background_color: '#f4f5f7',
         display: 'standalone',
         start_url: '/',
         icons: [
@@ -24,6 +24,15 @@ export default defineConfig({
       },
       workbox: {
         globPatterns: ['**/*.{js,css,html,svg}'],
+        // Export libraries load on first download, not at install time.
+        globIgnores: ['**/exceljs*.js', '**/html2canvas*.js', '**/purify*.js', '**/index.es-*.js'],
+        runtimeCaching: [
+          {
+            urlPattern: ({ url }) => url.pathname.startsWith('/assets/'),
+            handler: 'CacheFirst',
+            options: { cacheName: 'lazy-assets', expiration: { maxEntries: 40 } },
+          },
+        ],
       },
     }),
   ],

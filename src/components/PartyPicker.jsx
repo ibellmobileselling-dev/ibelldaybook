@@ -6,9 +6,11 @@ function norm(s) {
   return s.trim().replace(/\s+/g, " ").toLowerCase();
 }
 
-// Text input with type-ahead over existing parties. value is { partyId, name };
-// partyId is null when the typed name doesn't match a party (a new party).
-export default function PartyPicker({ parties, value, onChange, onPicked, inputRef }) {
+// Text input with type-ahead over existing parties.
+// value: { partyId, name, noParty }. partyId is set when the text matches a
+// party; otherwise the text becomes a new party, or (noParty) just the
+// entry's particulars, e.g. "SAFE" or "Tea".
+export default function PartyPicker({ parties, value, onChange, onPicked, inputRef, allowNoParty = false, placeholder = "Party name" }) {
   const [open, setOpen] = useState(false);
   const query = norm(value.name);
 
@@ -26,7 +28,7 @@ export default function PartyPicker({ parties, value, onChange, onPicked, inputR
 
   function handleType(text) {
     const match = parties.find((p) => norm(p.name) === norm(text));
-    onChange({ partyId: match?.id ?? null, name: text });
+    onChange({ partyId: match?.id ?? null, name: text, noParty: !!value.noParty });
     setOpen(true);
   }
 
@@ -40,41 +42,45 @@ export default function PartyPicker({ parties, value, onChange, onPicked, inputR
     if (e.key !== "Enter") return;
     e.preventDefault();
     if (!query) return;
-    // Enter takes the exact match, else the top suggestion, else a new party.
+    // Enter takes the exact match, else the top suggestion, else keeps the
+    // current new-party / no-party choice.
     const p = exact || matches[0];
-    pick(p ? { partyId: p.id, name: p.name } : { partyId: null, name: value.name.trim() });
+    pick(p ? { partyId: p.id, name: p.name, noParty: false } : { partyId: null, name: value.name.trim(), noParty: !!value.noParty });
   }
 
   const showList = open && query && !(exact && value.partyId === exact.id && matches.length === 1);
+  const typed = value.name.trim();
 
   return (
     <div className="picker">
       <input
         ref={inputRef}
         value={value.name}
-        placeholder="Party name"
+        placeholder={placeholder}
         autoComplete="off"
         enterKeyHint="next"
         onChange={(e) => handleType(e.target.value)}
         onFocus={() => setOpen(true)}
         onBlur={() => setOpen(false)}
         onKeyDown={handleKeyDown}
+        aria-label={placeholder}
       />
       {showList && (
         // onMouseDown + preventDefault keeps the input focused so blur doesn't close the list first
-        <div className="picker-list" onMouseDown={(e) => e.preventDefault()}>
+        <div className="picker-list glass--large popover-in" role="listbox" onMouseDown={(e) => e.preventDefault()}>
           {matches.map((p) => (
-            <button type="button" key={p.id} className="picker-item" onClick={() => pick({ partyId: p.id, name: p.name })}>
+            <button type="button" key={p.id} role="option" className="picker-item" onClick={() => pick({ partyId: p.id, name: p.name, noParty: false })}>
               {p.name}
             </button>
           ))}
           {!exact && (
-            <button
-              type="button"
-              className="picker-item picker-new"
-              onClick={() => pick({ partyId: null, name: value.name.trim() })}
-            >
-              + New party “{value.name.trim()}”
+            <button type="button" role="option" className="picker-item picker-new" onClick={() => pick({ partyId: null, name: typed, noParty: false })}>
+              + New party “{typed}”
+            </button>
+          )}
+          {!exact && allowNoParty && (
+            <button type="button" role="option" className="picker-item picker-none" onClick={() => pick({ partyId: null, name: typed, noParty: true })}>
+              Use “{typed}” without a party
             </button>
           )}
         </div>
