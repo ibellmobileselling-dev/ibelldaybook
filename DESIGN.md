@@ -164,7 +164,7 @@ Patterns used:
 | Reduce transparency | `prefers-reduced-transparency: reduce`; no `backdrop-filter` support | Glass → identity (opaque + outline) |
 | Increase contrast | `prefers-contrast: more` | High-contrast roles, opaque glass, 1.5 px outlines, no tinted glass |
 | Reduce motion | `prefers-reduced-motion: reduce` | Springs → settle, press scale and glow off, sheets fade only, no shake |
-| Large text | browser zoom / font size | Layouts reflow; nothing clipped |
+| Large text | browser font size | Layouts reflow; nothing clipped. Page pinch/double-tap zoom is **disabled** for a native-app feel (owner's decision, 2026-10-02; trade-off against WCAG 1.4.4). The Day Entry photo keeps its own zoom buttons. |
 
 Icon-only buttons carry `aria-label`; focus rings are visible (2 px primary, offset 2).
 

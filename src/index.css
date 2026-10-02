@@ -61,6 +61,71 @@ a {
   white-space: nowrap;
 }
 
+/* ---------- Native-app feel ---------- */
+html {
+  /* no double-tap zoom; taps fire immediately */
+  touch-action: manipulation;
+  /* keep text size fixed when the phone rotates */
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+body {
+  /* no rubber-band bounce / pull-to-refresh past the page edges */
+  overscroll-behavior-y: none;
+}
+/* Buttons, tabs and links behave like app controls: no text selection,
+   no long-press callout. Inputs and content text stay selectable. */
+button,
+a,
+.nav-item,
+.segmented,
+.capsule,
+.top-bar,
+.sheet-handle,
+.txn-day,
+.section-head {
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
+}
+img {
+  -webkit-user-drag: none;
+}
+
+/* Date fields: mobile browsers (iOS Safari especially) give them an intrinsic
+   minimum width that ignores width:100%, pushing them past their container.
+   Make them shrink like any other field. */
+input[type="date"] {
+  -webkit-appearance: none;
+  appearance: none;
+  display: block;
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+  line-height: 1.2;
+}
+input[type="date"]::-webkit-date-and-time-value {
+  text-align: left;
+  margin: 0;
+  min-width: 0;
+}
+input[type="date"]::-webkit-datetime-edit {
+  padding: 0;
+  overflow: hidden;
+}
+input[type="date"]::-webkit-calendar-picker-indicator {
+  margin-left: auto;
+  padding: 0;
+  opacity: 0.7;
+  cursor: pointer;
+}
+/* Never let the page scroll sideways because of one wide control.
+   `clip` (unlike `hidden`) doesn't create a scroll container, so sticky
+   chrome keeps working. */
+#root {
+  overflow-x: clip;
+}
+
 /* Hide number-input spinners; amounts are typed, not stepped. */
 input[type="number"] {
   -moz-appearance: textfield;

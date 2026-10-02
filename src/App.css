@@ -522,7 +522,7 @@ body:has(.bottom-nav) .fab { bottom: calc(var(--chrome-bottom) + var(--space-2))
   display: flex;
   gap: var(--space-3);
 }
-.field-row > .field { flex: 1; }
+.field-row > .field { flex: 1; min-width: 0; }
 .field-row > .field.narrow { flex: 0 0 96px; }
 .field-hint {
   font-size: 12px;
@@ -688,8 +688,8 @@ body:has(.bottom-nav) .fab { bottom: calc(var(--chrome-bottom) + var(--space-2))
   padding: var(--space-2) var(--space-4) 0;
 }
 .period-picker { display: flex; flex-direction: column; gap: var(--space-3); }
-.period-dates { display: flex; gap: var(--space-3); }
-.period-dates .field { flex: 1; }
+.period-dates { display: flex; flex-wrap: wrap; gap: var(--space-3); }
+.period-dates .field { flex: 1 1 140px; min-width: 0; }
 .scroll-x {
   overflow-x: auto;
   scrollbar-width: none;
@@ -698,6 +698,7 @@ body:has(.bottom-nav) .fab { bottom: calc(var(--chrome-bottom) + var(--space-2))
 }
 .scroll-x::-webkit-scrollbar { display: none; }
 .scroll-x .segmented { width: max-content; min-width: 100%; }
+.scroll-x .segmented-option { flex: 1 0 auto; }
 
 .cb-summary {
   display: grid;
@@ -1253,4 +1254,14 @@ body:has(.bottom-nav) .fab { bottom: calc(var(--chrome-bottom) + var(--space-2))
   justify-content: center;
   gap: var(--space-1);
   min-width: 40px;
+}
+
+/* Small phones (≤ 360px): keep segment and nav labels on one line */
+@media (max-width: 360px) {
+  .segmented-option {
+    padding: 0 var(--space-2);
+    font-size: 13px;
+  }
+  .nav-item { font-size: 9.5px; }
+  .top-bar-title { font-size: 20px; }
 }

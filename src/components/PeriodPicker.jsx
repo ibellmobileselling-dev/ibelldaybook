@@ -9,7 +9,7 @@ export function defaultPeriod() {
 const MODES = [
   { value: "today", label: "Today" },
   { value: "date", label: "Date" },
-  { value: "range", label: "From – To" },
+  { value: "range", label: "From–To" },
   { value: "all", label: "All" },
 ];
 

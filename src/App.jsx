@@ -15,6 +15,7 @@ import Settings from "./pages/Settings";
 import BottomNav, { tabIndex } from "./components/BottomNav";
 import ScrollEdge from "./components/ScrollEdge";
 import { installPressGlow } from "./design/motion";
+import { installNoZoom } from "./design/appFeel";
 
 function PrivateRoute({ children }) {
   const { user, loading } = useAuth();
@@ -71,6 +72,7 @@ function AppRoutes() {
 }
 
 installPressGlow();
+installNoZoom();
 
 export default function App() {
   return (
