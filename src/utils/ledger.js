@@ -19,8 +19,18 @@ export function formatDay(iso) {
   return date.toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" });
 }
 
+// Whole rupees normally; exactly two decimals only when there are real paise
+// (₹5,000 / ₹4,999.90, never ₹4,999.9). Sign is left to the caller.
 export function rupees(n) {
-  return `₹${Math.abs(n).toLocaleString("en-IN", { maximumFractionDigits: 2 })}`;
+  const v = Math.round(Math.abs(Number(n) || 0) * 100) / 100;
+  const digits = Number.isInteger(v) ? 0 : 2;
+  return `₹${v.toLocaleString("en-IN", { minimumFractionDigits: digits, maximumFractionDigits: digits })}`;
+}
+
+// True when an amount has paise (after rounding away float noise).
+export function hasPaise(n) {
+  const v = Math.round(Math.abs(Number(n) || 0) * 100) / 100;
+  return !Number.isInteger(v);
 }
 
 // Balance > 0 means the party owes you ("You'll Get").

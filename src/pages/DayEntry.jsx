@@ -8,7 +8,7 @@ import PartyPicker from "../components/PartyPicker";
 import SegmentedControl from "../components/SegmentedControl";
 import AccountSelect from "../components/AccountSelect";
 import { CameraIcon, MinusIcon, PlusIcon, RotateIcon, TrashIcon } from "../components/Icons";
-import { todayLocal, reportWriteError } from "../utils/ledger";
+import { todayLocal, reportWriteError, rupees } from "../utils/ledger";
 import { shake } from "../design/motion";
 
 // Long side of the reference photo; large enough to zoom into handwriting.
@@ -59,10 +59,6 @@ function renderPhoto(img, rotation) {
 function formatDate(iso) {
   const [y, m, d] = iso.split("-");
   return `${d}/${m}/${y}`;
-}
-
-function rupees(n) {
-  return `₹${n.toLocaleString("en-IN")}`;
 }
 
 // Draft survives the app being closed mid-entry. Browser storage can be

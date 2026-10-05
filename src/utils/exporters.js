@@ -13,9 +13,11 @@ const PDF_HEAD = [166, 159, 77];
 const PDF_BODY = [197, 217, 241];
 const PDF_TEXT = [17, 17, 17];
 
+// Same rule as the screen: whole rupees, or exactly two decimals for real paise.
 export function fmtAmount(n) {
-  const v = Number(n) || 0;
-  return v.toLocaleString("en-IN", { minimumFractionDigits: Number.isInteger(v) ? 0 : 2, maximumFractionDigits: 2 });
+  const v = Math.round((Number(n) || 0) * 100) / 100;
+  const digits = Number.isInteger(v) ? 0 : 2;
+  return v.toLocaleString("en-IN", { minimumFractionDigits: digits, maximumFractionDigits: digits });
 }
 
 function fileSafe(s) {

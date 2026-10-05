@@ -8,9 +8,10 @@ import TopBar from "../components/TopBar";
 import Sheet from "../components/Sheet";
 import Avatar from "../components/Avatar";
 import SkeletonRows from "../components/Skeleton";
-import { BankIcon, LogoutIcon, PlusIcon, SearchIcon, WalletIcon } from "../components/Icons";
-import { signedAmount, reportWriteError, formatDay, rupees } from "../utils/ledger";
-import { accountBalances } from "../utils/cashbook";
+import PaiseCheckSheet, { findPaiseItems } from "../components/PaiseCheckSheet";
+import { ArrowDownLeftIcon, ArrowUpRightIcon, BankIcon, LogoutIcon, PlusIcon, SearchIcon, WalletIcon } from "../components/Icons";
+import { signedAmount, reportWriteError, formatDay, rupees, todayLocal } from "../utils/ledger";
+import { ALL, buildCashBook, formatDMY } from "../utils/cashbook";
 
 const EMPTY_PARTY = { name: "", phone: "", openingBalance: "0" };
 
@@ -20,6 +21,7 @@ export default function Dashboard() {
   const [search, setSearch] = useState("");
   const [showAdd, setShowAdd] = useState(false);
   const [newParty, setNewParty] = useState(EMPTY_PARTY);
+  const [showPaise, setShowPaise] = useState(false);
 
   // One pass over the entries for every party's balance and last date.
   const balances = useMemo(() => {
@@ -38,15 +40,33 @@ export default function Dashboard() {
   const totals = useMemo(() => {
     let give = 0;
     let get = 0;
+    let giveCount = 0;
+    let getCount = 0;
     for (const p of parties) {
       const bal = balances[p.id]?.balance || 0;
-      if (bal < 0) give += -bal;
-      else get += bal;
+      if (bal <= -0.005) {
+        give += -bal;
+        giveCount++;
+      } else if (bal >= 0.005) {
+        get += bal;
+        getCount++;
+      }
     }
-    return { give, get };
+    return { give, get, giveCount, getCount };
   }, [parties, balances]);
 
-  const accountBal = useMemo(() => accountBalances(accounts, txns, cashId), [accounts, txns, cashId]);
+  // Today's cash book across all accounts: what the shop has right now.
+  // Transfers between own accounts move money but are not income or spending,
+  // so they are left out of today's In / Out (the closing is unaffected).
+  const today = useMemo(() => {
+    const book = buildCashBook({ txns, accounts, parties, cashId, period: { mode: "today" }, accountFilter: ALL });
+    const sum = (rows) => Math.round(rows.filter((r) => !r.isTransfer).reduce((s, r) => s + r.amount, 0) * 100) / 100;
+    const byAccount = Object.fromEntries(book.summary.map((s) => [s.id, s.closing]));
+    const cash = byAccount[cashId] || 0;
+    return { opening: book.opening, in: sum(book.inward), out: sum(book.outward), closing: book.closing, cash, bank: Math.round((book.closing - cash) * 100) / 100, byAccount };
+  }, [txns, accounts, parties, cashId]);
+  const accountBal = today.byAccount;
+  const paiseItems = useMemo(() => findPaiseItems({ txns, accounts, parties }), [txns, accounts, parties]);
 
   const filtered = parties
     .filter((p) => p.name.toLowerCase().includes(search.toLowerCase()))
@@ -60,7 +80,6 @@ export default function Dashboard() {
     close();
   }
 
-  const net = totals.get - totals.give;
 
   return (
     <>
@@ -74,26 +93,61 @@ export default function Dashboard() {
         }
       />
       <main className="page with-fab">
-        <section className="hero" aria-label="Party balances">
-          <div className="hero-label">Net balance with parties</div>
-          <div className={`hero-value ${net < 0 ? "give" : ""}`}>
-            {net < 0 ? "−" : ""}
-            {rupees(net)}
+        <Link to="/reports" className="hero hero-link press-content" aria-label="Today's cash book. Open Cash Book">
+          <div className="hero-top">
+            <span className="hero-label">Today · {formatDMY(todayLocal())}</span>
+            <span className="hero-open">Cash Book ›</span>
+          </div>
+          <div className="hero-caption">Closing balance</div>
+          <div className={`hero-value ${today.closing < 0 ? "give" : ""}`}>
+            {today.closing < 0 ? "−" : ""}
+            {rupees(today.closing)}
           </div>
           <div className="hero-sub">
-            {net < 0 ? "You'll give overall" : "You'll get overall"} · {parties.length} {parties.length === 1 ? "party" : "parties"}
+            Cash {today.cash < 0 ? "−" : ""}{rupees(today.cash)} · Bank {today.bank < 0 ? "−" : ""}{rupees(today.bank)}
           </div>
-          <div className="hero-tiles">
+          <div className="hero-tiles three">
+            <div className="hero-tile">
+              <span>Opening</span>
+              <strong>{today.opening < 0 ? "−" : ""}{rupees(today.opening)}</strong>
+            </div>
             <div className="hero-tile get">
-              <span>You'll get</span>
-              <strong>{rupees(totals.get)}</strong>
+              <span>
+                <ArrowDownLeftIcon width={13} height={13} aria-hidden="true" /> In
+              </span>
+              <strong>{rupees(today.in)}</strong>
             </div>
             <div className="hero-tile give">
-              <span>You'll give</span>
-              <strong>{rupees(totals.give)}</strong>
+              <span>
+                <ArrowUpRightIcon width={13} height={13} aria-hidden="true" /> Out
+              </span>
+              <strong>{rupees(today.out)}</strong>
             </div>
           </div>
-        </section>
+        </Link>
+
+        {paiseItems.length > 0 && (
+          <button type="button" className="notice press-content" onClick={() => setShowPaise(true)}>
+            <strong>{paiseItems.length} amount{paiseItems.length === 1 ? "" : "s"} with paise</strong>
+            <span>e.g. {rupees(paiseItems[0].amount)}. Tap to check for typing mistakes.</span>
+          </button>
+        )}
+
+        <div className="section-head">
+          <h2>Party dues</h2>
+        </div>
+        <div className="dues">
+          <div className="due-tile get">
+            <span>You'll get</span>
+            <strong>{rupees(totals.get)}</strong>
+            <small>from {totals.getCount} {totals.getCount === 1 ? "party" : "parties"}</small>
+          </div>
+          <div className="due-tile give">
+            <span>You'll give</span>
+            <strong>{rupees(totals.give)}</strong>
+            <small>to {totals.giveCount} {totals.giveCount === 1 ? "party" : "parties"}</small>
+          </div>
+        </div>
 
         <div className="section-head">
           <h2>Money in accounts</h2>
@@ -163,6 +217,8 @@ export default function Dashboard() {
       <button className="fab capsule glass glass--tinted press" onClick={() => setShowAdd(true)}>
         <PlusIcon width={20} height={20} /> Add party
       </button>
+
+      {showPaise && <PaiseCheckSheet items={paiseItems} userId={user.uid} onClose={() => setShowPaise(false)} />}
 
       {showAdd && (
         <Sheet title="New party" onClose={() => setShowAdd(false)}>
